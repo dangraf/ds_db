@@ -1,0 +1,5 @@
+pathlib
+datetime
+sqlalchemy
+psycopg2-binary
+opencv-python

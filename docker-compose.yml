@@ -1,0 +1,39 @@
+services:
+  db:
+    image: kartoza/postgis:15-3.3
+    hostname: db
+    shm_size: 1gb
+    volumes:
+      - pg_data:/var/lib/posgresql
+    environment:
+      - POSTGRES_DB=deepdb
+      - POSTGRES_USER=docker
+      - POSTGRES_PASS=hellohellomydear
+      - ALLOW_IP_RANGE=0.0.0.0/0
+      - POSTGRES_MULTIPLE_EXTENSIONS=postgis,hstore,postgis_topology,postgis_raster,pgrouting
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: "PGPASSWORD=hellohellomydear -h 127.0.0.1 -U docker deepdb"
+    networks:
+      - deep_net
+  db-test:
+    image: kartoza/postgis:15-3.3
+    hostname: db-test
+    shm_size: 1gb
+    environment:
+      - POSTGRES_DB=deepdb
+      - POSTGRES_USER=docker
+      - POSTGRES_PASS=hellohellomydear
+      - ALLOW_IP_RANGE=0.0.0.0/0
+      - POSTGRES_MULTIPLE_EXTENSIONS=postgis,hstore,postgis_topology,postgis_raster,pgrouting
+    ports:
+      - "5433:5432"
+
+
+networks:
+  deep_net:
+    driver: bridge
+
+volumes:
+  pg_data:
