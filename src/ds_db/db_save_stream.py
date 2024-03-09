@@ -6,6 +6,11 @@ from pathlib import Path
 from ds_db.all import *
 from typing import Dict
 
+try:
+    from ds_python.metadata import *
+except:
+    print("warning, not possible to run streamsacer cinse ds_python is not installed")
+
 __all__ = ['StreamSaver',
            'Video_file_pruner']
 PAD_PROBE_OK = 1
@@ -168,6 +173,7 @@ class StreamSaver:
         self.fileupdater = FileUpdater(video_folder=video_folder,
                                        update_files_freq_s=update_files_freq_s,
                                        **kwargs)
+
 
         # https://docs.sqlalchemy.org/en/20/tutorial/orm_related_objects.html
         # Kolla här hur saker fungerar..
