@@ -1,10 +1,10 @@
 from sqlalchemy import create_engine, Insert, func, Engine
 from sqlalchemy.engine.url import URL
 from sqlalchemy.orm import Session
-from ds_db.db_schemas import Base
+from ds_db.db_schemas import Base, BaseSettings
+from typing import Dict
 
-engine: Engine = None
-
+engines: Dict = {}
 __all__ = ['DBConnection',
            'flatten_array']
 
@@ -15,47 +15,51 @@ class DBConnection:
                  port: int = 5432,
                  password: str = 'hellohellomydear',
                  user: str = 'docker',
-                 db: str = 'deepdb'):
+                 db: str = 'deepdb',
+                 base=Base):
         self.host = host
         self.port = port
         self.password = password
         self.user = user
         self.db = db
+        self.base = base
+
         self.set_engine()
 
     def get_engine(self):
-        global engine
-        return engine
+        global engines
+        return engines.get(self.base, None)
 
     def get_session(self):
-        global engine
-        return Session(engine)
+        global engines
+        return Session(engines.get(self.base, None))
 
     def create_tables(self):
-        global engine
-        Base.metadata.create_all(engine, checkfirst=True)
+        global engines
+        self.base.metadata.create_all(engines.get(self.base, None), checkfirst=True)
 
     def set_engine(self):
-        global engine
+        global engines
         database = {'host': self.host,
                     'port': self.port,
                     'password': self.password,
                     'username': self.user,
                     'database': self.db,
                     'drivername': 'postgresql+psycopg2'}
+        engine = engines.get(self.base, None)
         if engine is None:
             if "sqlite:" in database['host']:
                 print(database['host'])
-                engine = create_engine(database['host'], echo=True)
+                engines[self.base] = create_engine(database['host'], echo=True)
             else:
-                engine = create_engine(URL.create(**database))
-            engine.connect()
+                engines[self.base] = create_engine(URL.create(**database))
+            engines[self.base].connect()
 
         self.create_tables()
 
     def delete_tables(self):
-        global engine
-        Base.metadata.drop_all(engine, checkfirst=False)
+        global engines
+        self.base.metadata.drop_all(engines.get(self.base, None), checkfirst=False)
 
 
 def flatten_array(array):

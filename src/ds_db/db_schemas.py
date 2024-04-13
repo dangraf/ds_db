@@ -5,10 +5,14 @@ from datetime import datetime, timedelta
 from pathlib import Path
 import cv2
 
-__all__ = ['File',
+__all__ = ['Base',
+           'BaseSettings',
+           'File',
            'Frame',
            'BoundingBox',
-           'Classification']
+           'Classification',
+           'BaseSettings',
+           'LabelsOfInterest']
 
 
 def ntp_timestamp_to_datetime(ntp_timestamp):
@@ -27,9 +31,13 @@ def bbox_info_to_array(bbox_info):
 class Base(DeclarativeBase):
     pass
 
+class BaseSettings(DeclarativeBase):
+    pass
+
 
 class File(Base):
     __tablename__ = "file_table"
+    __bind_key__ = "data"
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     filepath: Mapped[str] = mapped_column(unique=True)
     stream_nbr: Mapped[int]
@@ -37,6 +45,9 @@ class File(Base):
     num_frames: Mapped[int]
     start_date: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     end_date: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    frames: Mapped[List["Frame"]] = relationship(back_populates="file",
+                                                 cascade="all, delete-orphan",
+                                                 passive_deletes=True)
 
     def update_from_filepath(self, filepath):
         p = Path(filepath)
@@ -58,13 +69,18 @@ class File(Base):
 
 class Frame(Base):
     __tablename__ = "frame_table"
+    __bind_key__ = "data"
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    file_id: Mapped[int] = mapped_column(ForeignKey("file_table.id"), nullable=True)
+    file_id: Mapped[int] = mapped_column(ForeignKey("file_table.id", ondelete="CASCADE"))
+    file: Mapped["File"] = relationship(back_populates="frames")
+
     source_id: Mapped[int]  # need both in file and frame since they are matched in a separate process
     frame_number: Mapped[int]
     timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    objects: Mapped[List["BoundingBox"]] = relationship(back_populates="frame", lazy="raise_on_sql",
-                                                        cascade="delete, merge, save-update")
+
+    bboxes: Mapped[List["BoundingBox"]] = relationship(back_populates="frame",
+                                                       cascade="all, delete-orphan",
+                                                       passive_deletes=True)
 
     def frame_meta2frame(self, frame_meta):
         self.source_id = int(frame_meta.source_id)
@@ -78,18 +94,21 @@ class Frame(Base):
 
 class BoundingBox(Base):
     __tablename__ = "bbox_table"
+    __bind_key__ = "data"
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    frame_id: Mapped[int] = mapped_column(ForeignKey("frame_table.id"), nullable=False)
+    frame_id: Mapped[int] = mapped_column(ForeignKey("frame_table.id", ondelete="CASCADE"))
+    frame: Mapped["Frame"] = relationship(back_populates="bboxes")
 
-    # tracking_id: Mapped[int] = mapped_column(ForeignKey("trackid_table.id"), nullable=False)
     tracking_id: Mapped[int]
     label: Mapped[str]
     confidence: Mapped[float]
     track_conf: Mapped[float]
     bbox: Mapped[List[int]] = mapped_column(ARRAY(Integer, as_tuple=False))
     tbox: Mapped[List[int]] = mapped_column(ARRAY(Integer, as_tuple=False))
-    frame: Mapped["Frame"] = relationship(back_populates="objects", lazy="raise_on_sql",
-                                          cascade="delete, merge, save-update")
+
+    children: Mapped[List["Classification"]] = relationship(back_populates="parent",
+                                                            cascade="all, delete-orphan",
+                                                            passive_deletes=True)
 
     def obj_meta2bbox(self, obj_meta):
         self.label = obj_meta.obj_label
@@ -108,8 +127,18 @@ class Classification(Base):
     label: Mapped[str]
     confidence: Mapped[float]
 
+    bbox_id: Mapped[int] = mapped_column(ForeignKey("bbox_table.id", ondelete="CASCADE"))
+    bbox: Mapped["BoundingBox"] = relationship(back_populates="classifications")
+
     def cls_meta2classification(self, cls_meta, tracking_id, model_name):
         self.tracking_id = int(tracking_id)
         self.label = str(cls_meta.result_label)
         self.confidence = float(cls_meta.result_prob)
         self.model_name = str(model_name)
+
+
+class LabelsOfInterest(BaseSettings):
+    __tablename__ = "label_of_interest_table"
+    __bind_key__ = "settings"
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    label: Mapped[str]
