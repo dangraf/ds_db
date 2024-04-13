@@ -6,6 +6,8 @@ from pathlib import Path
 from ds_db.all import *
 from typing import Dict
 
+from sqlalchemy.exc import PendingRollbackError
+
 try:
     from ds_python.metadata import *
 except:
@@ -204,11 +206,18 @@ class StreamSaver:
                         o.classifications.append(cl)
 
                 if len(f.bboxes) > 0:
+                    try:
+                        _ = self.session.connection()
+                    except PendingRollbackError:
+                        self.session.rollback()
+
                     self.session.add(f)
             self.session.commit()
         except BaseException as e:
             print(e)
             self.session.rollback()
+            self.session.close()
+            self.session = self.conn.get_session()
         return PAD_PROBE_OK
 
     def close(self):
