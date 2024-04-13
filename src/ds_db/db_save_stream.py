@@ -9,7 +9,7 @@ from typing import Dict
 try:
     from ds_python.metadata import *
 except:
-    print("warning, not possible to run streamsacer cinse ds_python is not installed")
+    print("warning, not possible to run stream saver since ds_python is not installed")
 
 __all__ = ['StreamSaver',
            'Video_file_pruner']

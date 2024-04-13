@@ -1,5 +1,6 @@
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy import ForeignKey, ARRAY, Integer, DateTime
+from sqlalchemy.ext.hybrid import hybrid_property
 from typing import List
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -31,13 +32,13 @@ def bbox_info_to_array(bbox_info):
 class Base(DeclarativeBase):
     pass
 
+
 class BaseSettings(DeclarativeBase):
     pass
 
 
 class File(Base):
     __tablename__ = "file_table"
-    __bind_key__ = "data"
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     filepath: Mapped[str] = mapped_column(unique=True)
     stream_nbr: Mapped[int]
@@ -48,6 +49,9 @@ class File(Base):
     frames: Mapped[List["Frame"]] = relationship(back_populates="file",
                                                  cascade="all",
                                                  passive_deletes=True)
+
+    def __repr__(self):
+        return f"path: {self.filepath}, stream_nbr:{self.stream_nbr}, num_frames:{self.num_frames}"
 
     def update_from_filepath(self, filepath):
         p = Path(filepath)
@@ -69,7 +73,6 @@ class File(Base):
 
 class Frame(Base):
     __tablename__ = "frame_table"
-    __bind_key__ = "data"
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     file_id: Mapped[int] = mapped_column(ForeignKey("file_table.id", ondelete="CASCADE"), nullable=True)
     file: Mapped["File"] = relationship(back_populates="frames")
@@ -94,7 +97,6 @@ class Frame(Base):
 
 class BoundingBox(Base):
     __tablename__ = "bbox_table"
-    __bind_key__ = "data"
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     frame_id: Mapped[int] = mapped_column(ForeignKey("frame_table.id", ondelete="CASCADE"))
     frame: Mapped["Frame"] = relationship(back_populates="bboxes")
@@ -107,8 +109,24 @@ class BoundingBox(Base):
     tbox: Mapped[List[int]] = mapped_column(ARRAY(Integer, as_tuple=False))
 
     classifications: Mapped[List["Classification"]] = relationship(back_populates="bbox",
-                                                            cascade="all, delete",
-                                                            passive_deletes=True)
+                                                                   cascade="all, delete",
+                                                                   passive_deletes=True)
+
+    @hybrid_property
+    def det_x_pos(self):
+        return self.bbox[0]
+
+    @hybrid_property
+    def det_y_pos(self):
+        return self.bbox[1]
+
+    @hybrid_property
+    def det_w(self):
+        return self.bbox[2]
+
+    @hybrid_property
+    def det_h(self):
+        return self.bbox[3]
 
     def obj_meta2bbox(self, obj_meta):
         self.label = obj_meta.obj_label
@@ -139,6 +157,5 @@ class Classification(Base):
 
 class LabelsOfInterest(BaseSettings):
     __tablename__ = "label_of_interest_table"
-    __bind_key__ = "settings"
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     label: Mapped[str]

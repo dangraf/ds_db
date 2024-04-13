@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Insert, func, Engine
+from sqlalchemy import create_engine
 from sqlalchemy.engine.url import URL
 from sqlalchemy.orm import Session
 from ds_db.db_schemas import Base, BaseSettings
@@ -6,7 +6,9 @@ from typing import Dict
 
 engines: Dict = {}
 __all__ = ['DBConnection',
-           'flatten_array']
+           'flatten_array',
+           'Base',
+           'BaseSettings']
 
 
 class DBConnection:
@@ -40,12 +42,12 @@ class DBConnection:
 
     def set_engine(self):
         global engines
-        database = {'host': self.host,
-                    'port': self.port,
-                    'password': self.password,
-                    'username': self.user,
-                    'database': self.db,
-                    'drivername': 'postgresql+psycopg2'}
+        database: Dict = {'host': self.host,
+                          'port': self.port,
+                          'password': self.password,
+                          'username': self.user,
+                          'database': self.db,
+                          'drivername': 'postgresql+psycopg2'}
         engine = engines.get(self.base, None)
         if engine is None:
             if "sqlite:" in database['host']:
