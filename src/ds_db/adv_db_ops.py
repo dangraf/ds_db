@@ -21,7 +21,7 @@ def get_tracking_features(min_age_minutes=5):
                       BoundingBox.tracking_id) \
         .select_from(Frame) \
         .join(BoundingBox) \
-        .group_by(BoundingBox.tracking_id) \
-        .where(func.max(Frame.timestamp) < dt_limit)
+        .group_by(BoundingBox.tracking_id)
+
     df = pd.read_sql(q.statement, session.bind)
     return df

@@ -114,19 +114,19 @@ class BoundingBox(Base):
 
     @hybrid_property
     def det_x_pos(self):
-        return self.bbox[0]
+        return self.tbox[0]
 
     @hybrid_property
     def det_y_pos(self):
-        return self.bbox[1]
+        return self.tbox[1]
 
     @hybrid_property
     def det_w(self):
-        return self.bbox[2]
+        return self.tbox[2]
 
     @hybrid_property
     def det_h(self):
-        return self.bbox[3]
+        return self.tbox[3]
 
     def obj_meta2bbox(self, obj_meta):
         self.label = obj_meta.obj_label
