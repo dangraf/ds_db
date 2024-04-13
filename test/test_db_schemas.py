@@ -6,13 +6,7 @@ from dummy_objects import *
 
 
 def test_save_file_to_db():
-    f = File()
-    f.stream_nbr = 0
-    f.filepath = '/hej/blabla.txt'
-    f.num_frames = 503
-    f.start_date = datetime.now()
-    f.end_date = datetime.now()
-    f.frame_offset = 10
+    f = get_dummy_file()
 
     conn = init_connection()
     session = conn.get_session()
@@ -24,12 +18,20 @@ def test_save_file_to_db():
 
 
 def test_save_frame_to_db_no_file_ref():
-    f = get_random_frame()
-
     conn = init_connection()
     session = conn.get_session()
 
+    f = get_dummy_file()
     session.add(f)
+    session.commit()
+
+    frame = get_random_frame()
+    frame.file_id = 1
+
+    file = session.query(File).limit(1).all()[0]
+    frame.file_id = file.id
+
+    session.add(frame)
     session.commit()
     cnt = session.query(Frame).count()
     assert cnt == 1
@@ -40,11 +42,16 @@ def test_save_frames_with_detections():
     conn = init_connection()
     session = conn.get_session()
 
-    f = get_random_frame()
+    #file = get_dummy_file()
+    frame = get_random_frame()
+    #file.frames.append(frame)
+
+
+
     for i in range(3):
         o = get_random_bboxobject()
-        f.objects.append(o)
-    session.add(f)
+        frame.bboxes.append(o)
+    session.add(frame)
     session.commit()
 
     assert session.query(Frame).count() == 1
@@ -82,7 +89,7 @@ def test_metadata_to_object():
 
     conn = init_connection()
 
-    f.objects.append(b)
+    f.bboxes.append(b)
 
     session = conn.get_session()
     session.add(f)

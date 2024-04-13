@@ -46,7 +46,7 @@ class File(Base):
     start_date: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     end_date: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     frames: Mapped[List["Frame"]] = relationship(back_populates="file",
-                                                 cascade="all, delete-orphan",
+                                                 cascade="all",
                                                  passive_deletes=True)
 
     def update_from_filepath(self, filepath):
@@ -71,7 +71,7 @@ class Frame(Base):
     __tablename__ = "frame_table"
     __bind_key__ = "data"
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    file_id: Mapped[int] = mapped_column(ForeignKey("file_table.id", ondelete="CASCADE"))
+    file_id: Mapped[int] = mapped_column(ForeignKey("file_table.id", ondelete="CASCADE"), nullable=True)
     file: Mapped["File"] = relationship(back_populates="frames")
 
     source_id: Mapped[int]  # need both in file and frame since they are matched in a separate process
@@ -79,7 +79,7 @@ class Frame(Base):
     timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
     bboxes: Mapped[List["BoundingBox"]] = relationship(back_populates="frame",
-                                                       cascade="all, delete-orphan",
+                                                       cascade="all, delete",
                                                        passive_deletes=True)
 
     def frame_meta2frame(self, frame_meta):
@@ -106,8 +106,8 @@ class BoundingBox(Base):
     bbox: Mapped[List[int]] = mapped_column(ARRAY(Integer, as_tuple=False))
     tbox: Mapped[List[int]] = mapped_column(ARRAY(Integer, as_tuple=False))
 
-    children: Mapped[List["Classification"]] = relationship(back_populates="parent",
-                                                            cascade="all, delete-orphan",
+    classifications: Mapped[List["Classification"]] = relationship(back_populates="bbox",
+                                                            cascade="all, delete",
                                                             passive_deletes=True)
 
     def obj_meta2bbox(self, obj_meta):

@@ -1,7 +1,8 @@
 from ds_db.db_connection import DBConnection
 from pathlib import Path
 
-__all__ = ['get_random_frame',
+__all__ = ['get_dummy_file',
+           'get_random_frame',
            'get_random_bboxobject',
            'BboxCoords',
            'BboxInfo',
@@ -10,12 +11,21 @@ __all__ = ['get_random_frame',
            'init_connection',
            'DB_TEST_PORT']
 
-from ds_db.db_schemas import Frame, BoundingBox
+from ds_db.db_schemas import Frame, BoundingBox, File
 from datetime import datetime
 
 DB_TEST_PORT = 5433
 
 
+def get_dummy_file():
+    f = File()
+    f.stream_nbr = 0
+    f.filepath = '/hej/blabla.txt'
+    f.num_frames = 503
+    f.start_date = datetime.now()
+    f.end_date = datetime.now()
+    f.frame_offset = 10
+    return f
 
 def get_random_frame(frame_number=10, source_id=0):
     f = Frame()

@@ -17,7 +17,7 @@ def test_get_offset():
     frame = get_random_frame()
     bbox = get_random_bboxobject(tracking_id=10)
     session = conn.get_session()
-    frame.objects.append(bbox)
+    frame.bboxes.append(bbox)
     session.add(frame)
     session.commit()
 
@@ -48,7 +48,7 @@ def test_save_frame_meta_and_obj_meta():
     obj_meta = DummyObjMeta()
     bbox = BoundingBox()
     bbox.obj_meta2bbox(obj_meta)
-    f.objects.append(bbox)
+    f.bboxes.append(bbox)
 
     with conn.get_session() as session:
         session.add(f)
@@ -91,7 +91,7 @@ def add_bbox_to_db(conn):
 
         frame = Frame()
         frame.file_id = 1
-        frame.objects.append(b)
+        frame.bboxes.append(b)
         frame.frame_number = 1
         frame.source_id = 0
         frame.timestamp = datetime.now()
