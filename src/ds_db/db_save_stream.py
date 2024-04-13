@@ -188,23 +188,27 @@ class StreamSaver:
 
     def db_save_pad(self, pad, info, u_data):
         batch_meta = info2batchmeta(info)
-        for frame_meta in iter_framelist(batch_meta):
-            f = Frame()
-            f.frame_meta2frame(frame_meta)
-            for obj_meta in iter_objlist(frame_meta):
-                o = BoundingBox()
-                o.obj_meta2bbox(obj_meta)
-                o.tracking_id += self.trackid_offset
-                f.objects.append(o)
-                for cid, cls in iter_classlist(obj_meta):
-                    model_name = self.compid_lookup.get(cid, str(cid))
-                    cl = Classification()
-                    cl.cls_meta2classification(cls_meta=cls, tracking_id=o.tracking_id, model_name=model_name)
-                    self.session.add(cl)
+        try:
+            for frame_meta in iter_framelist(batch_meta):
+                f = Frame()
+                f.frame_meta2frame(frame_meta)
+                for obj_meta in iter_objlist(frame_meta):
+                    o = BoundingBox()
+                    o.obj_meta2bbox(obj_meta)
+                    o.tracking_id += self.trackid_offset
+                    f.bboxes.append(o)
+                    for cid, cls in iter_classlist(obj_meta):
+                        model_name = self.compid_lookup.get(cid, str(cid))
+                        cl = Classification()
+                        cl.cls_meta2classification(cls_meta=cls, tracking_id=o.tracking_id, model_name=model_name)
+                        o.classifications.append(cl)
 
-            if len(f.objects) > 0:
-                self.session.add(f)
-        self.session.commit()
+                if len(f.bboxes) > 0:
+                    self.session.add(f)
+            self.session.commit()
+        except BaseException as e:
+            print(e)
+            self.session.rollback()
         return PAD_PROBE_OK
 
     def close(self):
