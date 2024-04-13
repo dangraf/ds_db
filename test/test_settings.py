@@ -8,6 +8,7 @@ def init_settings_db():
     conn.create_tables()
     return conn
 
+
 def test_add_read_labels():
     conn = init_settings_db()
     session = conn.get_session()
@@ -16,7 +17,6 @@ def test_add_read_labels():
     session.add(label)
     session.commit()
 
-
     lbls = session.query(LabelsOfInterest).all()
-    assert len(lbls)==1
+    assert len(lbls) == 1
     assert lbls[0].label == "hejhopp"
