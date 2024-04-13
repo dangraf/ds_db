@@ -7,7 +7,6 @@ import pandas as pd
 
 __all__ = ['get_tracking_features']
 
-
 def get_tracking_features(min_age_minutes=5):
     conn = DBConnection(base=Base)
     session = conn.get_session()
